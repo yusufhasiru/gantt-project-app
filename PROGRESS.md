@@ -239,6 +239,26 @@ Gate Fase 4: lulus.
 - **Push belum dilakukan** karena URL repository GitHub belum diberikan. Tidak ada URL, visibilitas,
   atau status remote yang diklaim.
 
+## Perbaikan setelah folder proyek dipindah
+
+Folder proyek dipindah dari `freebuff project/gantt-project/gantt-project-app` menjadi
+`freebuff project/gantt-project-app`, dan aplikasi tidak bisa dijalankan lagi. Penyebab yang ditemukan:
+
+1. **Prisma Client menyimpan path absolut.** `node_modules/.prisma/client/index.js` masih memuat
+   `/…/gantt-project/gantt-project-app/server/prisma/schema.prisma`, sehingga `DATABASE_URL="file:./dev.db"`
+   diresolusi ke folder yang sudah tidak ada. Ini penyebab utama kegagalan start.
+2. **Dev server lama masih hidup.** Proses `concurrently`/`vite`/`tsx` dari lokasi lama tetap memegang
+   port 3001 dan 5173 sehingga `npm run dev` berikutnya gagal `EADDRINUSE`.
+3. **Cache Vite/vitest** di `client/node_modules/.vite` dan `server/node_modules/.vite` masih menunjuk
+   lokasi lama.
+
+Perbaikan yang dilakukan: hentikan proses lama, `npm run db:generate` untuk menulis ulang path Prisma,
+hapus cache Vite/vitest, lalu mulai ulang dev server. `server/.env` tetap memakai path relatif sehingga
+tidak perlu diubah.
+
+Verifikasi ulang setelah perbaikan: `npm run typecheck` exit 0, `npm test` exit 0 (62 shared, 22 server,
+14 client = 98), `npm run build` exit 0, `npm run verify:browser` 19/19 lolos tanpa error runtime/console.
+
 ## Checklist penerimaan
 
 ### Proyek dan autentikasi
