@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Logs & OS files
+*.log
+.DS_Store
+
+# Test artifacts
+playwright-report/
+test-results/

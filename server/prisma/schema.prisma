@@ -1,0 +1,113 @@
+// GanttFlow — Prisma schema (SQLite)
+// Tanggal disimpan sebagai string ISO "YYYY-MM-DD" agar tidak bergeser karena zona waktu.
+// weekendDays disimpan sebagai JSON string (SQLite tidak mendukung array native).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  projects     Project[]
+}
+
+model Project {
+  id          String     @id @default(cuid())
+  ownerId     String
+  name        String
+  description String?
+  startDate   String
+  weekendDays String     @default("[0,6]")
+  createdAt   DateTime   @default(now())
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  holidays    Holiday[]
+  resources   Resource[]
+
+  @@index([ownerId])
+}
+
+model Holiday {
+  id        String  @id @default(cuid())
+  projectId String
+  date      String
+  name      String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, date])
+  @@index([projectId])
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  projectId       String
+  parentId        String?
+  position        Int          @default(0)
+  name            String
+  description     String?
+  durationDays    Int
+  startDate       String
+  scheduledStart  String
+  scheduledEnd    String
+  priority        String       @default("MEDIUM")
+  color           String       @default("#6366f1")
+  progress        Int          @default(0)
+  optimisticDays  Int?
+  pessimisticDays Int?
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent          Task?        @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Task[]       @relation("TaskHierarchy")
+  dependenciesOut Dependency[] @relation("DependencyPredecessor")
+  dependenciesIn  Dependency[] @relation("DependencySuccessor")
+  assignments     Assignment[]
+
+  @@index([projectId])
+  @@index([parentId])
+}
+
+model Dependency {
+  id            String @id @default(cuid())
+  predecessorId String
+  successorId   String
+  type          String @default("FS")
+  lagDays       Int    @default(0)
+  predecessor   Task   @relation("DependencyPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor     Task   @relation("DependencySuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorId, successorId])
+  @@index([successorId])
+}
+
+model Resource {
+  id             String       @id @default(cuid())
+  projectId      String
+  name           String
+  email          String
+  role           String
+  salary         Int
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignments    Assignment[]
+
+  @@index([projectId])
+}
+
+model Assignment {
+  id                String   @id @default(cuid())
+  taskId            String
+  resourceId        String
+  allocationPercent Int      @default(100)
+  task              Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  resource          Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, resourceId])
+  @@index([resourceId])
+}

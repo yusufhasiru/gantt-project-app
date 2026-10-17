@@ -1,0 +1,32 @@
+{
+  "name": "gantt-project-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GanttFlow - sistem manajemen proyek berbasis Gantt Chart",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run build:shared && concurrently -k -n server,client -c blue,green \"npm run dev -w @gantt/server\" \"npm run dev -w @gantt/client\"",
+    "build": "npm run build:shared && npm run build -w @gantt/server && npm run build -w @gantt/client",
+    "build:shared": "npm run build -w @gantt/shared",
+    "typecheck": "npm run build:shared && npm run typecheck -w @gantt/server && npm run typecheck -w @gantt/client",
+    "test": "npm run build:shared && npm test -w @gantt/shared && npm test -w @gantt/server && npm test -w @gantt/client",
+    "db:generate": "npm run db:generate -w @gantt/server",
+    "db:migrate": "npm run db:migrate -w @gantt/server",
+    "db:seed": "npm run db:seed -w @gantt/server",
+    "db:reset": "npm run db:reset -w @gantt/server",
+    "verify:browser": "node scripts/browser-verify.mjs",
+    "postinstall": "npm run db:generate -w @gantt/server"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.0",
+    "playwright-core": "1.64.1"
+  }
+}
