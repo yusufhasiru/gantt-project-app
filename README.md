@@ -363,7 +363,7 @@ diubah langsung. Menghapus tugas induk juga menghapus seluruh keturunannya.
 | Server gagal start: `JWT_SECRET kosong/terlalu pendek` | Isi `server/.env` dengan `openssl rand -hex 32`. |
 | `Can't reach database server` / tabel tidak ada | Jalankan `npm run db:migrate` dari root. |
 | Perubahan schema Prisma tidak dikenali | `npm run db:generate`, lalu restart server. |
-| Port 3001/5173 sudah dipakai | Hentikan proses lain atau ubah `PORT`/port Vite. Sisa dev server dari lokasi folder lama juga bisa memegang port: `lsof -ti:3001,5173 | xargs kill`. |
+| Port 3001/5173 sudah dipakai | Hentikan proses lain atau ubah `PORT`/port Vite. Sisa dev server dari lokasi folder lama juga bisa memegang port; berantas proses lama dengan `kill $(lsof -ti:3001,5173)`. |
 | Folder proyek dipindah atau di-rename, lalu server gagal start / `PrismaClientInitializationError` | Prisma Client menyimpan path absolut saat `prisma generate`. Hentikan dev server, jalankan `npm run db:generate`, hapus cache Vite (`rm -rf client/node_modules/.vite server/node_modules/.vite`), lalu `npm run dev`. |
 | Login gagal setelah mengganti password seed | Jalankan `npm run db:seed` untuk menyiapkan ulang akun demo. |
 | Data ingin direset total | `npm run db:reset && npm run db:seed` (menghapus data lokal). |
