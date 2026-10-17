@@ -9,7 +9,7 @@ hasil aktualnya. Tanggal kerja: 2026-10-17.
 |---|---|---|
 | 0 — Fondasi | Selesai | `npm install` exit 0, health endpoint 200 |
 | 1 — Mesin inti `shared` | Selesai | 62 test lulus, 8 file |
-| 2 — Backend & database | Selesai | Migration `20261017025921_init`, 20 integration test lulus, seed sukses |
+| 2 — Backend & database | Selesai | Migration `20261017025921_init`, 22 integration test lulus, seed sukses |
 | 3 — Frontend | Selesai | Typecheck client lulus, 14 component test lulus, build Vite lulus |
 | 4 — Integrasi & browser | Selesai | 19/19 pemeriksaan browser lulus, 4 screenshot |
 | 5 — Finalisasi | Selesai | Audit `.gitignore`, README, verifikasi akhir |
@@ -114,13 +114,13 @@ Perintah dan hasil aktual:
 npx prisma migrate dev --name init --skip-seed   → migration diterapkan
 npm run typecheck -w @gantt/server               → exit 0
 npm run db:seed                                  → sukses (dijalankan berulang, tetap konsisten)
-npm test -w @gantt/server                        → 20 test lulus
+npm test -w @gantt/server                        → 22 test lulus
 ```
 
-Integration test mencakup register/login/hash password, token invalid, CRUD proyek, CRUD tugas,
-parent-child & kedalaman, FS/SS+lag, siklus, kalender/libur, assignment/resource, CPM/PERT, isolasi
-kepemilikan (404 lintas pengguna), cascade delete, validasi input, format error, hapus hari libur,
-dan akses tanpa autentikasi.
+Integration test mencakup register/login/hash password, token invalid, token kedaluwarsa, CRUD
+proyek, CRUD tugas, parent-child & kedalaman, FS/SS+lag, siklus, kalender/libur, assignment/resource,
+CPM/PERT, isolasi kepemilikan (404 lintas pengguna), cascade delete, rollback transaksi saat
+recompute gagal, validasi input, format error, hapus hari libur, dan akses tanpa autentikasi.
 
 Data seed yang terverifikasi lewat API:
 
@@ -168,7 +168,7 @@ Verifikasi akhir:
 
 ```text
 npm run typecheck   → exit 0
-npm test            → 62 + 20 + 14 = 96 test lulus, 0 gagal
+npm test            → 62 + 22 + 14 = 98 test lulus, 0 gagal
 npm run build       → exit 0 (shared, server, client)
 ```
 
@@ -183,7 +183,10 @@ melalui API berhasil dan snapshot proyek seed sesuai data.
   middleware `requireAuth`. `userId(res)` kosong → 401; handler 401 global menghapus sesi.
 - **Perbaikan:** menambahkan `calendarRouter.use(requireAuth)` dan test regresi yang memastikan
   DELETE tanpa token → 401, lintas pengguna → 404, pemilik → 200 serta jadwal dihitung ulang.
-- **Verifikasi:** seluruh 20 integration test lulus dan verifikasi browser lulus.
+- **Verifikasi:** seluruh 22 integration test lulus dan verifikasi browser lulus.
+
+Dua test tambahan ditambahkan pada audit akhir: penolakan JWT kedaluwarsa dan pembatalan transaksi
+(perubahan nama tugas di-rollback ketika penjadwalan ulang gagal karena siklus di database).
 
 ### Hasil `npm run verify:browser`
 
@@ -286,7 +289,7 @@ Gate Fase 4: lulus.
 ### Repository
 
 - [x] `npm run typecheck` lolos.
-- [x] `npm test` lolos (96 test).
+- [x] `npm test` lolos (98 test).
 - [x] `npm run build` lolos.
 - [x] `.env`, database lokal, `node_modules`, dan build output diabaikan Git.
 - [x] README dan PROGRESS sesuai kondisi nyata.

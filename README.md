@@ -201,9 +201,9 @@ npm run build        # build shared, server, dan client
 Hasil terakhir (2026-10-17):
 
 - `shared`: 62 test lulus (8 file).
-- `server`: 20 integration test lulus (SQLite test terpisah).
+- `server`: 22 integration test lulus (SQLite test terpisah).
 - `client`: 14 component test lulus (4 file).
-- Total: **96 test lulus, 0 gagal**.
+- Total: **98 test lulus, 0 gagal**.
 
 Test server memakai `server/prisma/test.db` yang dibuat ulang `prisma db push --force-reset` pada
 global setup; database development tidak disentuh.

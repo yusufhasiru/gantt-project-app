@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { createApp } from '../app.js';
 import { prisma } from '../db.js';
 
@@ -100,6 +101,17 @@ describe('health dan autentikasi', () => {
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.code).toBe('VALIDATION_ERROR');
     expect(invalid.body.error.details.issues.length).toBeGreaterThan(0);
+  });
+
+  it('menolak token kedaluwarsa', async () => {
+    const expired = jwt.sign(
+      { sub: 'user-tidak-ada', email: 'kedaluwarsa@example.com' },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '-1s' },
+    );
+    const response = await request(app).get('/api/auth/me').set(auth(expired));
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('INVALID_TOKEN');
   });
 
   it('login berhasil, password salah generik, dan token invalid ditolak', async () => {
@@ -624,6 +636,35 @@ describe('integritas, error, dan cascade', () => {
     expect(await prisma.resource.count()).toBe(0);
     expect(await prisma.assignment.count()).toBe(0);
     expect(await prisma.holiday.count()).toBe(0);
+  });
+
+  it('membatalkan seluruh perubahan jika penjadwalan ulang gagal di dalam transaksi', async () => {
+    const { token } = await register('PM', 'pm@example.com');
+    const snapshot = await createProject(token);
+    const projectId = snapshot.project.id as string;
+    let tasks = await createTask(token, projectId, { name: 'A' });
+    const a = findTask(tasks, 'A');
+    tasks = await createTask(token, projectId, { name: 'B' });
+    const b = findTask(tasks, 'B');
+
+    // Membuat siklus langsung di database (melewati validasi API) untuk memaksa
+    // recompute gagal setelah update nama berada di dalam transaksi yang sama.
+    await prisma.dependency.create({
+      data: { predecessorId: a.id as string, successorId: b.id as string, type: 'FS', lagDays: 0 },
+    });
+    await prisma.dependency.create({
+      data: { predecessorId: b.id as string, successorId: a.id as string, type: 'FS', lagDays: 0 },
+    });
+
+    const response = await request(app)
+      .patch(`/api/tasks/${a.id}`)
+      .set(auth(token))
+      .send({ name: 'A berubah' });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('CYCLE_DETECTED');
+
+    const stored = await prisma.task.findUnique({ where: { id: a.id as string } });
+    expect(stored?.name).toBe('A');
   });
 
   it('menolak JSON invalid dan mengembalikan format error konsisten', async () => {
